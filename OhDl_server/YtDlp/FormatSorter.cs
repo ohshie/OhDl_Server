@@ -1,27 +1,29 @@
+using NYoutubeDL.Models;
 using YoutubeDLSharp.Metadata;
 
 namespace OhDl_server.YtDlp;
 
 public class FormatSorter
 {
-    public void Execute(FormatData[] formats, VideoInfo videoInfo, float? duration)
+    public void Execute(List<FormatDownloadInfo> formats, VideoInfo videoInfo, double? duration)
     {
         var groupedFormats = formats
-            .Where(f => f.Height != null)
-            .GroupBy(f => new{f.Height, f.FrameRate});
+            .Where(f => f.Height != null & f.Height > 144)
+            .GroupBy(f => new{f.Height, f.Fps});
 
         foreach (var group in groupedFormats)
         {
-            var preferredFormat = group.FirstOrDefault(f => !f.VideoCodec.StartsWith("vp")) // First try to find non-vp codec
+            
+            var preferredFormat = group.FirstOrDefault(f => f.Vcodec != null && !f.Vcodec.StartsWith("vp"))
                                   ?? group.First();
             
             VideoFormat mappedFormat = videoInfo.Formats
-                .FirstOrDefault(f => f.Width == preferredFormat.Width && f.FrameRate == preferredFormat.FrameRate) ?? new();
+                .FirstOrDefault(f => f.Width == preferredFormat.Width && f.FrameRate == preferredFormat.Fps) ?? new();
             
-            var fileSize = duration * preferredFormat.Bitrate / 1024;
+            var fileSize = duration * preferredFormat.Abr / 1024;
             if (fileSize > 2048)  mappedFormat.BigFile = true;
             
-            if (preferredFormat.VideoCodec.StartsWith("vp"))
+            if (preferredFormat.Vcodec != null && preferredFormat.Vcodec.StartsWith("vp"))
             {
                 mappedFormat.WebmOnly = true;
             }
@@ -29,8 +31,13 @@ public class FormatSorter
             mappedFormat.FormatCode = preferredFormat.FormatId;
             mappedFormat.Width = preferredFormat.Width;
             mappedFormat.Height = preferredFormat.Height;
-            mappedFormat.FrameRate = preferredFormat.FrameRate;
-            if (preferredFormat.AudioCodec != "none")
+
+            if (preferredFormat.Fps != null)
+            {
+                mappedFormat.FrameRate = preferredFormat.Fps;
+            }
+           
+            if (preferredFormat.Acodec != null && preferredFormat.Acodec != "none")
             {
                 mappedFormat.OneFile = true;
             }
@@ -44,7 +51,7 @@ public class FormatSorter
         }
     }
 
-    private string FormatEvaluator(FormatData format)
+    private string FormatEvaluator(FormatDownloadInfo format)
     {
         return format.Height switch
         {
@@ -68,7 +75,7 @@ public class VideoFormat
     
     public int? Height { get; set; }
     
-    public float? FrameRate { get; set; }
+    public double? FrameRate { get; set; }
 
     public bool OneFile { get; set; } = false;
 

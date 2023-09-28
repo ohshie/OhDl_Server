@@ -1,3 +1,5 @@
+using NYoutubeDL;
+using OhDl_server;
 using OhDl_server.YtDlp;
 using Serilog;
 using YoutubeDLSharp;
@@ -13,9 +15,11 @@ Log.Logger = new LoggerConfiguration()
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddTransient<YoutubeDL>();
+builder.Services.AddTransient<YoutubeDLP>();
 builder.Services.AddTransient<YtDlOperator>();
 builder.Services.AddTransient<FormatSorter>();
+builder.Services.AddTransient<TestingClass>();
+builder.Services.AddHttpClient();
 builder.Services.AddSerilog();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -24,12 +28,13 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin",
+    options.AddPolicy("Base",
         builder =>
         {
             builder.WithOrigins("http://127.0.0.1:5500")
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .WithExposedHeaders("Content-Disposition");
         });
 });
 
@@ -46,9 +51,17 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-app.UseCors("AllowSpecificOrigin");
+app.UseCors("Base");
 
 app.MapControllers();
 
+/*TestingClass testingClass = new(app.Services.GetService<YtDlOperator>());
+await testingClass.Test();*/
+
 app.Run();
+
+
+
+
+
 

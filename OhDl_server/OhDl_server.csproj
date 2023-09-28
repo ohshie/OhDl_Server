@@ -8,11 +8,16 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.10"/>
+        <PackageReference Include="NYoutubeDLP" Version="0.13.0" />
         <PackageReference Include="Serilog" Version="3.0.1" />
         <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
         <PackageReference Include="YoutubeDLSharp" Version="1.0.0" />
     </ItemGroup>
 
+
+    <ItemGroup>
+      <Folder Include="audio\" />
+    </ItemGroup>
 
 </Project>

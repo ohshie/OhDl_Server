@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using OhDl_server.YtDlp;
 
@@ -10,14 +11,18 @@ public class YtDlController : ControllerBase
 {
     private readonly ILogger<YtDlController> _logger;
     private readonly YtDlOperator _ytDlOperator;
+    private readonly HttpClient _httpClient;
 
-    public YtDlController(ILogger<YtDlController> logger, YtDlOperator ytDlOperator)
+    public YtDlController(ILogger<YtDlController> logger, 
+        YtDlOperator ytDlOperator,
+        HttpClient httpClient)
     {
         _logger = logger;
         _ytDlOperator = ytDlOperator;
+        _httpClient = httpClient;
     }
 
-    [EnableCors("AllowSpecificOrigin")]
+    [EnableCors("Base")]
     [HttpGet(Name = "GetVideoInfo")]
     public async Task<VideoInfo> Get(string videoUrl)
     {
@@ -25,9 +30,19 @@ public class YtDlController : ControllerBase
         return videoInfo;
     }
 
-    [HttpPost(Name = "RequestVideoWithParams")]
-    public async Task Post(string videoFormat, string videoUrl)
+    [EnableCors("Base")]
+    [HttpPost(Name = "RequestAudioOnly")]
+    public async Task<IActionResult> PostAudioOnly(string videoUrl)
     {
-        await _ytDlOperator.ServeVideo(videoFormat, videoUrl);
+        var (filePath, filename) = await _ytDlOperator.ServeAudioOnly(videoUrl);
+
+        if (!System.IO.File.Exists(filePath)) return NotFound();
+
+        var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        
+        return new FileStreamResult(stream, "audio/mp3")
+        {
+            FileDownloadName = filename+".mp3"
+        };
     }
 }

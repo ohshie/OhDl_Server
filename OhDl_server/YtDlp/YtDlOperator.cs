@@ -1,55 +1,78 @@
-using YoutubeDLSharp;
-using YoutubeDLSharp.Options;
+using Microsoft.AspNetCore.Http.HttpResults;
+using NYoutubeDL;
+using NYoutubeDL.Helpers;
+using NYoutubeDL.Models;
+
 
 namespace OhDl_server.YtDlp;
 
 public class YtDlOperator
 {
     private readonly ILogger<YtDlOperator> _logger;
-    private readonly YoutubeDL _youtubeDl;
+    private readonly YoutubeDLP _youtubeDl;
     private readonly FormatSorter _sorter;
 
     public YtDlOperator(ILogger<YtDlOperator> logger, 
-        YoutubeDL youtubeDl, FormatSorter sorter)
+        YoutubeDLP youtubeDl,
+        FormatSorter sorter)
     {
         _logger = logger;
         _youtubeDl = youtubeDl;
-        this._sorter = sorter;
+        _sorter = sorter;
+
+        _youtubeDl.StandardOutputEvent += (sender, output) => Console.WriteLine(output);
+        _youtubeDl.StandardErrorEvent += (sender, errorOutput) => Console.WriteLine(errorOutput);
     }
 
     public async Task<VideoInfo> GetVideoInfo(string videoUrl)
     {
-        var requestedVideoInfo = await _youtubeDl.RunVideoDataFetch(videoUrl);
+        _youtubeDl.VideoUrl = videoUrl;
         
+        await _youtubeDl.PrepareDownloadAsync();
+        await _youtubeDl.GetDownloadInfoAsync();
+        
+        VideoDownloadInfo requestedVideoInfo = (VideoDownloadInfo)_youtubeDl.Info;
+
         VideoInfo videoInfo = new()
         {
-            VideoName = requestedVideoInfo.Data.Title,
-            Hosting = requestedVideoInfo.Data.ExtractorKey,
-            Thumbnail = requestedVideoInfo.Data.Thumbnail
+            VideoName = requestedVideoInfo.Title,
+            Hosting = requestedVideoInfo.ExtractorKey,
+            Thumbnail = requestedVideoInfo.Thumbnail
         };
 
-        if (!string.IsNullOrEmpty(requestedVideoInfo.Data.Description))
-            videoInfo.VideoDesc = requestedVideoInfo.Data.Description;
-        
-        _sorter.Execute(requestedVideoInfo.Data.Formats, videoInfo, requestedVideoInfo.Data.Duration);
-        
+        if (!string.IsNullOrEmpty(requestedVideoInfo.Description))
+            videoInfo.VideoDesc = requestedVideoInfo.Description;
+
+        _sorter.Execute(requestedVideoInfo.Formats, videoInfo, requestedVideoInfo.Duration);
         
         return videoInfo;
     }
-
-    public async Task ServeVideo(string videoFormat, string videoUrl)
+    
+    public async Task<(string, string)> ServeAudioOnly(string videoUrl)
     {
-        var options = new OptionSet()
-        {
-            Format = $"{videoFormat}+bestaudio",
-            FormatSort = "vcodec:h264,res,acodec:m4a",
-            //RecodeVideo = VideoRecodeFormat.Mp4
-        };
+        _logger.LogInformation(eventId: 1,"starting audio only process");
+        
+        _youtubeDl.VideoUrl = videoUrl;
 
-        await _youtubeDl.RunWithOptions(url: videoUrl,
-            options: options);
+        _youtubeDl.Options.VideoFormatOptions.FormatAdvanced = "\"ba*[vcodec=none]\"";
+        _youtubeDl.Options.PostProcessingOptions.ExtractAudio = true;
+        _youtubeDl.Options.PostProcessingOptions.AudioFormat = Enums.AudioFormat.mp3;
+        
+        _youtubeDl.Options.FilesystemOptions.Output = "\"./audio/%(title)s.%(ext)s\"";
+       
+        await _youtubeDl.PrepareDownloadAsync();
+        
+        Task download =  _youtubeDl.DownloadAsync();
+        Task getInfo = _youtubeDl.GetDownloadInfoAsync();
 
-        Console.WriteLine("test");
+        await Task.WhenAll(getInfo, download);
+
+        var fileName = _youtubeDl.Info.Title;
+        var fileLocation = $"./audio/{fileName}.mp3";
+        
+        _logger.LogInformation("Audio processed");
+        
+        return (fileLocation, fileName);
     }
 }
 
