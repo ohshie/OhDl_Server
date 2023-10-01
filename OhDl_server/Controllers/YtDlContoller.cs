@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using OhDl_server.YtDlp;
+using OhDl_server.Models;
 
 namespace OhDl_server.Controllers;
 
@@ -11,27 +11,40 @@ public class YtDlController : ControllerBase
 {
     private readonly ILogger<YtDlController> _logger;
     private readonly YtDlOperator _ytDlOperator;
-    private readonly HttpClient _httpClient;
+    private readonly StreamProvider _streamProvider;
 
     public YtDlController(ILogger<YtDlController> logger, 
-        YtDlOperator ytDlOperator,
-        HttpClient httpClient)
+        YtDlOperator ytDlOperator, StreamProvider streamProvider)
     {
         _logger = logger;
         _ytDlOperator = ytDlOperator;
-        _httpClient = httpClient;
+        _streamProvider = streamProvider;
     }
 
     [EnableCors("Base")]
-    [HttpGet(Name = "GetVideoInfo")]
-    public async Task<VideoInfo> Get(string videoUrl)
+    [HttpGet("GetVideoInfo",Name = "GetVideoInfo")]
+    public async Task<VideoInfo> GetInfo(string videoUrl)
     {
+        if (!Validator.Validator.ValidateUrl(videoUrl, true)) return null;
+        
         var videoInfo = await _ytDlOperator.GetVideoInfo(videoUrl);
+
         return videoInfo;
     }
+    
+    [EnableCors("Base")]
+    [HttpPost("RequestVideo",Name = "RequestVideo")]
+    public async Task<IActionResult> PostVideoByFormat(string videoUrl, string formatCode)
+    {
+        var (filePath, fileName) = await _ytDlOperator.ServeVideo(videoUrl, formatCode);
+        
+        if (!System.IO.File.Exists(filePath)) return NotFound();
+        
+        return _streamProvider.ServeFileStream(fileName, filePath, "video/mp4");
+    }
 
     [EnableCors("Base")]
-    [HttpPost(Name = "RequestAudioOnly")]
+    [HttpPost("RequestAudioOnly",Name = "RequestAudioOnly")]
     public async Task<IActionResult> PostAudioOnly(string videoUrl)
     {
         var (filePath, filename) = await _ytDlOperator.ServeAudioOnly(videoUrl);

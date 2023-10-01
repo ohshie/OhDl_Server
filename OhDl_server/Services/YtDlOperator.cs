@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using NYoutubeDL;
 using NYoutubeDL.Helpers;
 using NYoutubeDL.Models;
-
+using OhDl_server.Models;
+using VideoInfo = OhDl_server.Models.VideoInfo;
 
 namespace OhDl_server.YtDlp;
 
@@ -60,12 +60,7 @@ public class YtDlOperator
         
         _youtubeDl.Options.FilesystemOptions.Output = "\"./audio/%(title)s.%(ext)s\"";
        
-        await _youtubeDl.PrepareDownloadAsync();
-        
-        Task download =  _youtubeDl.DownloadAsync();
-        Task getInfo = _youtubeDl.GetDownloadInfoAsync();
-
-        await Task.WhenAll(getInfo, download);
+        await DownloadProcess();
 
         var fileName = _youtubeDl.Info.Title;
         var fileLocation = $"./audio/{fileName}.mp3";
@@ -74,17 +69,36 @@ public class YtDlOperator
         
         return (fileLocation, fileName);
     }
+
+    public async Task<(string, string)> ServeVideo(string videoUrl, string formatCode)
+    {
+        _logger.LogInformation(eventId: 2, "starting video serving process");
+
+        _youtubeDl.VideoUrl = videoUrl;
+
+        _youtubeDl.Options.VideoFormatOptions.FormatAdvanced = formatCode+"+ba";
+        _youtubeDl.Options.PostProcessingOptions.RemuxVideo = "mp4";
+        
+        _youtubeDl.Options.FilesystemOptions.Output = "\"./video/%(title)s.%(ext)s\"";
+
+        await DownloadProcess();
+        
+        string fileName = _youtubeDl.Info.Title;
+        string fileLocation = $"./video/{fileName}.mp4";
+        
+        _logger.LogInformation("Video processed");
+        
+        return (fileLocation, fileName);
+    }
+
+    private async Task DownloadProcess()
+    {
+        await _youtubeDl.PrepareDownloadAsync();
+        
+        Task download =  _youtubeDl.DownloadAsync();
+        Task getInfo = _youtubeDl.GetDownloadInfoAsync();
+
+        await Task.WhenAll(getInfo, download);
+    }
 }
 
-public class VideoInfo
-{
-    public string VideoName { get; set; } = string.Empty;
-
-    public string VideoDesc { get; set; } = string.Empty;
-
-    public string Thumbnail { get; set; } = string.Empty;
-    
-    public string Hosting { get; set; } = string.Empty;
-
-    public List<VideoFormat> Formats { get; set; } = new();
-}

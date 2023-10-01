@@ -1,5 +1,6 @@
 using NYoutubeDL.Models;
-using YoutubeDLSharp.Metadata;
+using OhDl_server.Models;
+using VideoInfo = OhDl_server.Models.VideoInfo;
 
 namespace OhDl_server.YtDlp;
 
@@ -65,21 +66,4 @@ public class FormatSorter
             _ => "Huge"
         };
     }
-}
-
-public class VideoFormat
-{
-    public string FormatCode { get; set; } = string.Empty;
-    public string Size { get; set; } = string.Empty;
-    public int? Width { get; set; }
-    
-    public int? Height { get; set; }
-    
-    public double? FrameRate { get; set; }
-
-    public bool OneFile { get; set; } = false;
-
-    public bool BigFile { get; set; } = false;
-
-    public bool WebmOnly { get; set; } = false;
 }

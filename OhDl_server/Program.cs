@@ -2,7 +2,6 @@ using NYoutubeDL;
 using OhDl_server;
 using OhDl_server.YtDlp;
 using Serilog;
-using YoutubeDLSharp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +18,7 @@ builder.Services.AddTransient<YoutubeDLP>();
 builder.Services.AddTransient<YtDlOperator>();
 builder.Services.AddTransient<FormatSorter>();
 builder.Services.AddTransient<TestingClass>();
+builder.Services.AddTransient<StreamProvider>();
 builder.Services.AddHttpClient();
 builder.Services.AddSerilog();
 
@@ -31,11 +31,18 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Base",
         builder =>
         {
-            builder.WithOrigins("http://127.0.0.1:5500")
+            builder.WithOrigins("https://127.0.0.1:5500")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .WithExposedHeaders("Content-Disposition");
         });
+    options.AddPolicy("Debug", builder =>
+    {
+        builder.WithOrigins("*")
+            .AllowAnyMethod()
+            .AllowAnyMethod()
+            .WithExposedHeaders("Content-Disposition");
+    });
 });
 
 var app = builder.Build();
@@ -44,6 +51,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseCors("Debug");
     app.UseSwagger();
     app.UseSwaggerUI();
 }
