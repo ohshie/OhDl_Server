@@ -1,12 +1,11 @@
 using NYoutubeDL.Models;
 using OhDl_server.Models;
-using VideoInfo = OhDl_server.Models.VideoInfo;
 
 namespace OhDl_server.YtDlp;
 
 public class FormatSorter
 {
-    public void Execute(List<FormatDownloadInfo> formats, VideoInfo videoInfo, double? duration)
+    public void Execute(List<FormatDownloadInfo> formats, DlVideoInfo videoInfo, double? duration)
     {
         var groupedFormats = formats
             .Where(f => f.Height != null & f.Height > 144)

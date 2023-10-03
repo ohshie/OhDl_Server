@@ -1,6 +1,11 @@
+using Elsa;
+using Elsa.Persistence.EntityFramework.Sqlite;
 using NYoutubeDL;
-using OhDl_server;
+using OhDl_server.DataLayer;
+using OhDl_server.DataLayer.DbContext;
+using OhDl_server.DataLayer.Repository;
 using OhDl_server.YtDlp;
+using OhDl_server.YtDlp.ElsaCleaner;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,10 +22,18 @@ builder.Services.AddControllers();
 builder.Services.AddTransient<YoutubeDLP>();
 builder.Services.AddTransient<YtDlOperator>();
 builder.Services.AddTransient<FormatSorter>();
-builder.Services.AddTransient<TestingClass>();
 builder.Services.AddTransient<StreamProvider>();
+
+builder.Services.AddTransient<IFileRepository, FileRepository>();
+builder.Services.AddTransient<FileOperator>();
+
 builder.Services.AddHttpClient();
 builder.Services.AddSerilog();
+
+builder.Services.AddDbContext<OhDlDbContext>(s =>
+{
+    s.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -45,8 +58,19 @@ builder.Services.AddCors(options =>
     });
 });
 
+// builder.Services.AddTransient<IClock>(s => SystemClock.Instance);
+builder.Services.AddElsa(elsa =>
+        {
+            elsa.AddQuartzTemporalActivities().AddWorkflow<FileCleaner>();
+        });
+
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<OhDlDbContext>();
+    await dbContext.Database.EnsureCreatedAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -55,16 +79,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseCors("Base");
+}
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-app.UseCors("Base");
 
 app.MapControllers();
-
-/*TestingClass testingClass = new(app.Services.GetService<YtDlOperator>());
-await testingClass.Test();*/
 
 app.Run();
 

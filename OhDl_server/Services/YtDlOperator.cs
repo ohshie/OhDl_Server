@@ -1,8 +1,8 @@
+using System.Web;
 using NYoutubeDL;
 using NYoutubeDL.Helpers;
 using NYoutubeDL.Models;
 using OhDl_server.Models;
-using VideoInfo = OhDl_server.Models.VideoInfo;
 
 namespace OhDl_server.YtDlp;
 
@@ -24,16 +24,18 @@ public class YtDlOperator
         _youtubeDl.StandardErrorEvent += (sender, errorOutput) => Console.WriteLine(errorOutput);
     }
 
-    public async Task<VideoInfo> GetVideoInfo(string videoUrl)
+    public async Task<DlVideoInfo> GetVideoInfo(string videoUrl)
     {
-        _youtubeDl.VideoUrl = videoUrl;
+        _logger.LogInformation(eventId: 1,"Getting video info");
+        
+        _youtubeDl.VideoUrl = HttpUtility.UrlDecode(videoUrl);
         
         await _youtubeDl.PrepareDownloadAsync();
         await _youtubeDl.GetDownloadInfoAsync();
         
         VideoDownloadInfo requestedVideoInfo = (VideoDownloadInfo)_youtubeDl.Info;
 
-        VideoInfo videoInfo = new()
+        DlVideoInfo videoInfo = new()
         {
             VideoName = requestedVideoInfo.Title,
             Hosting = requestedVideoInfo.ExtractorKey,
@@ -43,34 +45,35 @@ public class YtDlOperator
         if (!string.IsNullOrEmpty(requestedVideoInfo.Description))
             videoInfo.VideoDesc = requestedVideoInfo.Description;
 
+        _logger.LogInformation(eventId: 1,"Sorting formats");
         _sorter.Execute(requestedVideoInfo.Formats, videoInfo, requestedVideoInfo.Duration);
         
         return videoInfo;
     }
     
-    public async Task<(string, string)> ServeAudioOnly(string videoUrl)
+    public async Task<(string, string)> ServeAudioOnly(string videoUrl, string uuId)
     {
         _logger.LogInformation(eventId: 1,"starting audio only process");
         
-        _youtubeDl.VideoUrl = videoUrl;
+        _youtubeDl.VideoUrl = HttpUtility.UrlDecode(videoUrl);
 
         _youtubeDl.Options.VideoFormatOptions.FormatAdvanced = "\"ba*[vcodec=none]\"";
         _youtubeDl.Options.PostProcessingOptions.ExtractAudio = true;
         _youtubeDl.Options.PostProcessingOptions.AudioFormat = Enums.AudioFormat.mp3;
         
-        _youtubeDl.Options.FilesystemOptions.Output = "\"./audio/%(title)s.%(ext)s\"";
+        _youtubeDl.Options.FilesystemOptions.Output = $"\"./audio/{uuId}/%(title)s.%(ext)s\"";
        
         await DownloadProcess();
 
         var fileName = _youtubeDl.Info.Title;
-        var fileLocation = $"./audio/{fileName}.mp3";
+        var fileLocation = $"./audio/{uuId}/{fileName}.mp3";
         
         _logger.LogInformation("Audio processed");
         
         return (fileLocation, fileName);
     }
 
-    public async Task<(string, string)> ServeVideo(string videoUrl, string formatCode)
+    public async Task<(string, string)> ServeVideo(string videoUrl, string formatCode, string uuId)
     {
         _logger.LogInformation(eventId: 2, "starting video serving process");
 
@@ -79,12 +82,12 @@ public class YtDlOperator
         _youtubeDl.Options.VideoFormatOptions.FormatAdvanced = formatCode+"+ba";
         _youtubeDl.Options.PostProcessingOptions.RemuxVideo = "mp4";
         
-        _youtubeDl.Options.FilesystemOptions.Output = "\"./video/%(title)s.%(ext)s\"";
+        _youtubeDl.Options.FilesystemOptions.Output = $"\"./video/{uuId}/%(title)s.%(ext)s\"";
 
         await DownloadProcess();
         
         string fileName = _youtubeDl.Info.Title;
-        string fileLocation = $"./video/{fileName}.mp4";
+        string fileLocation = $"./video/{uuId}/{fileName}.mp4";
         
         _logger.LogInformation("Video processed");
         
