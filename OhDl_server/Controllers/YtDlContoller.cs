@@ -44,7 +44,7 @@ public class YtDlController : ControllerBase
        if(!Request.Headers.TryGetValue("X-User-ID", out var userID))
            return BadRequest("No cookie provided");
 
-       video.UserId = userID;
+       video.UserId = new Guid(userID);
        
        var (filePath, filename) = await _ytDlOperator.ServeVideo(video.VideoUrl, video.FormatCode, video.UserId);
         
@@ -64,7 +64,7 @@ public class YtDlController : ControllerBase
         if(!Request.Headers.TryGetValue("X-User-ID", out var userID))
             return BadRequest("No cookie provided");
 
-        video.UserId = userID;
+        video.UserId = new Guid(userID);
         
         var (filePath, filename) = await _ytDlOperator.ServeAudioOnly(video.VideoUrl, video.UserId);
 

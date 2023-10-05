@@ -13,7 +13,7 @@ public class StreamProvider
 
     public FileStreamResult ServeFileStream(string filename, string filePath, string contentType)
     {
-        _logger.Log(LogLevel.Information,"Started serving stream");
+        _logger.Log(LogLevel.Information,"Started serving stream for {filename} of {type}", filename, contentType);
         
         var extension = contentType.Split("/")[1];
         

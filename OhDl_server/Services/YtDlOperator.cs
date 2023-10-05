@@ -26,7 +26,7 @@ public class YtDlOperator
 
     public async Task<DlVideoInfo> GetVideoInfo(string videoUrl)
     {
-        _logger.LogInformation(eventId: 1,"Getting video info");
+        _logger.Log(LogLevel.Information,"Getting video info for {url}", videoUrl);
         
         _youtubeDl.VideoUrl = HttpUtility.UrlDecode(videoUrl);
         
@@ -45,15 +45,15 @@ public class YtDlOperator
         if (!string.IsNullOrEmpty(requestedVideoInfo.Description))
             videoInfo.VideoDesc = requestedVideoInfo.Description;
 
-        _logger.LogInformation(eventId: 1,"Sorting formats");
+        _logger.LogInformation(eventId: 1,"Sorting formats for {url}", videoUrl);
         _sorter.Execute(requestedVideoInfo.Formats, videoInfo, requestedVideoInfo.Duration);
         
         return videoInfo;
     }
     
-    public async Task<(string, string)> ServeAudioOnly(string videoUrl, string uuId)
+    public async Task<(string, string)> ServeAudioOnly(string videoUrl, Guid uuId)
     {
-        _logger.LogInformation(eventId: 1,"starting audio only process");
+        _logger.LogInformation(eventId: 1,"starting audio only process for {videoUrl} by {uuId}", videoUrl, uuId);
         
         _youtubeDl.VideoUrl = HttpUtility.UrlDecode(videoUrl);
 
@@ -73,7 +73,7 @@ public class YtDlOperator
         return (fileLocation, fileName);
     }
 
-    public async Task<(string, string)> ServeVideo(string videoUrl, string formatCode, string uuId)
+    public async Task<(string, string)> ServeVideo(string videoUrl, string formatCode, Guid uuId)
     {
         _logger.LogInformation(eventId: 2, "starting video serving process");
 

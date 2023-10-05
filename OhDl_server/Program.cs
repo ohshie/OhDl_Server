@@ -11,7 +11,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
+    .MinimumLevel.Warning()
     .Enrich.FromLogContext()
     .WriteTo.Console()
     .CreateLogger();
