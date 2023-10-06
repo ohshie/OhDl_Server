@@ -13,15 +13,13 @@ public class StreamProvider
 
     public FileStreamResult ServeFileStream(string filename, string filePath, string contentType)
     {
-        _logger.Log(LogLevel.Information,"Started serving stream for {filename} of {type}", filename, contentType);
-        
-        var extension = contentType.Split("/")[1];
+        _logger.Log(LogLevel.Information,"Started serving stream for {Filename} of {Type}", filename, contentType);
         
         var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
 
         return new FileStreamResult(stream, contentType)
         {
-            FileDownloadName = filename + $".{extension}"
+            FileDownloadName = filename
         };
     }
 }

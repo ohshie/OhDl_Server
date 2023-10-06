@@ -1,4 +1,3 @@
-using OhDl_server.DataLayer.DbContext;
 using OhDl_server.DataLayer.Repository;
 using OhDl_server.Models;
 
@@ -15,22 +14,25 @@ public class FileOperator
         _logger = logger;
     }
 
-    public async Task RegisterNewFile(string filename, string type, string uuId)
+    public async Task RegisterNewFile(string filePath, string uuId)
     {
-        var file = await _fileRepository.GetByFileNameAndType(filename, type);
+        var filename = filePath.Split("/").Last();
+        var randomFolder = filePath.Split("/")[^2];
+        
+        var file = await _fileRepository.GetByNameAndFolder(filename, randomFolder);
         if (file != null) return;
         
-        file = new FileTracker()
+        file = new FileTracker
         {
-            FileName = filename,
-            Type = type,
+            Filename = filename,
+            Folder = randomFolder,
             UuId = uuId,
-            CreationTime = DateTime.Now
+            CreationTime = DateTime.Now,
         };
 
-        file.Extension = type == "audio" ? ".mp3" : ".mp4";
-
         await _fileRepository.Add(file);
+        
+        _logger.Log(LogLevel.Information, "registered new file {Filename}", file.Filename);
     }
 
     public async Task<IEnumerable<FileTracker>> ServeFiles()

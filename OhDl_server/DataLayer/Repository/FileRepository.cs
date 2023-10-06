@@ -43,9 +43,9 @@ public class FileRepository : IFileRepository
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<FileTracker?> GetByFileNameAndType(string name, string type)
+    public async Task<FileTracker?> GetByNameAndFolder(string name, string folder)
     {
        return await _dbContext.FileTrackers
-           .FirstOrDefaultAsync(ft => ft.FileName == name && ft.Type == type);
+           .FirstOrDefaultAsync(ft => ft.Filename == name && ft.Folder == folder);
     }
 }

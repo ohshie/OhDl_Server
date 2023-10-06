@@ -48,9 +48,10 @@ public class YtDlController : ControllerBase
        
        var (filePath, filename) = await _ytDlOperator.ServeVideo(video.VideoUrl, video.FormatCode, video.UserId);
         
-       if (!System.IO.File.Exists(filePath)) return NotFound(new {message = "No file was downloaded for some reason."});
+       if (!System.IO.File.Exists(filePath)) 
+           return NotFound(new {message = "No file was downloaded for some reason."});
         
-       await _fileOperator.RegisterNewFile(filename, "audio", userID);
+       await _fileOperator.RegisterNewFile(filePath, userID);
        
        var stream = _streamProvider.ServeFileStream(filename, filePath, "video/mp4");
 
@@ -67,10 +68,11 @@ public class YtDlController : ControllerBase
         video.UserId = new Guid(userID);
         
         var (filePath, filename) = await _ytDlOperator.ServeAudioOnly(video.VideoUrl, video.UserId);
+        
+        if (!System.IO.File.Exists(filePath)) 
+            return NotFound(new {message = "No file was downloaded for some reason."});
 
-        if (!System.IO.File.Exists(filePath)) return NotFound(new {message = "No file was downloaded for some reason."});
-
-        await _fileOperator.RegisterNewFile(filename, "audio", userID);
+        await _fileOperator.RegisterNewFile(filePath, userID);
         
         var stream = _streamProvider.ServeFileStream(filename, filePath, "audio/mp3");
 
