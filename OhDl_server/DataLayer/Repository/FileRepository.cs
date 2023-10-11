@@ -22,7 +22,7 @@ public class FileRepository : IFileRepository
 
     public async Task<IEnumerable<FileTracker>> GetAll()
     {
-        return await _dbContext.FileTrackers.ToListAsync();
+        return await _dbContext.FileTrackers.AsNoTracking().ToListAsync();
     }
 
     public async Task Add(FileTracker entity)

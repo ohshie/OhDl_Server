@@ -44,7 +44,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Base",
         builder =>
         {
-            builder.WithOrigins("https://127.0.0.1:5500")
+            builder.WithOrigins("https://localhost:1234")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .WithExposedHeaders("Content-Disposition");

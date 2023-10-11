@@ -26,6 +26,7 @@ public class YtDlOperator
         
         _youtubeDl.Options.FilesystemOptions.RestrictFilenames = true;
         _youtubeDl.Options.DownloadOptions.ExternalDownloader = Enums.ExternalDownloader.aria2c;
+        _youtubeDl.Options.FilesystemOptions.CacheDir = $"\"./cache";
     }
 
     public async Task<DlVideoInfo> GetVideoInfo(string videoUrl)
@@ -67,8 +68,6 @@ public class YtDlOperator
         _youtubeDl.Options.PostProcessingOptions.ExtractAudio = true;
         _youtubeDl.Options.PostProcessingOptions.AudioFormat = Enums.AudioFormat.mp3;
         
-        _youtubeDl.Options.FilesystemOptions.Output = $"\"{directory.FullName}/%(title)s.%(ext)s\"";
-        
         var filePath = await DownloadProcess(directory.FullName);
 
         var filename = filePath.Split("/").Last();
@@ -85,12 +84,10 @@ public class YtDlOperator
         var directory = DirectoryCreator("mp4", uuId);
         
         _youtubeDl.VideoUrl = videoUrl;
-
+        
         _youtubeDl.Options.VideoFormatOptions.FormatAdvanced = formatCode+"+ba";
         _youtubeDl.Options.PostProcessingOptions.RemuxVideo = "mp4";
         
-        _youtubeDl.Options.FilesystemOptions.Output = $"\"./video/{uuId}/%(title)s.%(ext)s\"";
-
         var filePath = await DownloadProcess(directory.FullName);
         var filename = filePath.Split("/").Last();
         
@@ -101,6 +98,8 @@ public class YtDlOperator
 
     private async Task<string> DownloadProcess(string directory)
     {
+        _youtubeDl.Options.FilesystemOptions.Output = $"\"{directory}/%(title)s.%(ext)s\"";
+        
         await _youtubeDl.PrepareDownloadAsync();
         
         Task download =  _youtubeDl.DownloadAsync();
