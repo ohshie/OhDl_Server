@@ -1,0 +1,6 @@
+# dockerignore
+/bin
+/obj
+/Users
+ffmpeg
+yt-dlp_macos

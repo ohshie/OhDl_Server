@@ -42,20 +42,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Base",
-        builder =>
+        cp =>
         {
-            builder.WithOrigins("https://localhost:1234")
+            cp.WithOrigins($"{builder.Configuration.GetValue<string>("AllowedHosts")}")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .WithExposedHeaders("Content-Disposition");
         });
-    options.AddPolicy("Debug", builder =>
-    {
-        builder.WithOrigins("*")
-            .AllowAnyMethod()
-            .AllowAnyMethod()
-            .WithExposedHeaders("Content-Disposition");
-    });
 });
 
 // builder.Services.AddTransient<IClock>(s => SystemClock.Instance);

@@ -12,10 +12,10 @@ public static class Validator
         decodedUrl = decodedUrl.Trim();
         if (required == false && decodedUrl == "") return true;
         if (required && decodedUrl == "") return false;
-
-        Regex pattern = new Regex(@"^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$");
-        Match match = pattern.Match(decodedUrl);
-        if (match.Success == false) return false;
-        return true;
+        
+        if (decodedUrl.Length < minLength || decodedUrl.Length > maxLength) return false;
+        
+        return Uri.TryCreate(decodedUrl, UriKind.Absolute, out Uri uriResult)
+               && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }
