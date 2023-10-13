@@ -1,5 +1,6 @@
 using Elsa;
 using Elsa.Persistence.EntityFramework.Sqlite;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using NYoutubeDL;
 using OhDl_server.DataLayer;
 using OhDl_server.DataLayer.DbContext;
@@ -32,7 +33,7 @@ builder.Services.AddSerilog();
 
 builder.Services.AddDbContext<OhDlDbContext>(s =>
 {
-    s.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+    s.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")!);
 });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -56,6 +57,9 @@ builder.Services.AddElsa(elsa =>
         {
             elsa.AddQuartzTemporalActivities().AddWorkflow<FileCleaner>();
         });
+
+var urls = builder.Configuration.GetValue<string>("AppUrl");
+builder.WebHost.UseUrls(urls);
 
 var app = builder.Build();
 
@@ -83,7 +87,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+Log.Logger.Warning("App is now listening at {Url}", urls);
 app.Run();
+
 
 
 
