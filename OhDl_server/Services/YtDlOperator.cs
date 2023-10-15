@@ -21,12 +21,12 @@ public class YtDlOperator
         _youtubeDl = youtubeDl;
         _sorter = sorter;
 
-        _youtubeDl.StandardOutputEvent += (sender, output) => Console.WriteLine(output);
-        _youtubeDl.StandardErrorEvent += (sender, errorOutput) => Console.WriteLine(errorOutput);
+        _youtubeDl.StandardOutputEvent += (sender, output) => logger.LogInformation("yt-dlp: {Output}",output);
+        _youtubeDl.StandardErrorEvent += (sender, errorOutput) => logger.LogInformation("yt-dlp error {YtDlError}", errorOutput);
         
         _youtubeDl.Options.FilesystemOptions.RestrictFilenames = true;
         _youtubeDl.Options.DownloadOptions.ExternalDownloader = Enums.ExternalDownloader.aria2c;
-        _youtubeDl.Options.FilesystemOptions.CacheDir = $"\"./cache";
+        _youtubeDl.Options.FilesystemOptions.CacheDir = $"\"./cache/\"";
     }
 
     public async Task<DlVideoInfo> GetVideoInfo(string videoUrl)

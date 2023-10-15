@@ -44,7 +44,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Base",
         cp =>
         {
-            cp.WithOrigins($"{builder.Configuration.GetValue<string>("AllowedHosts")}")
+            cp.WithOrigins(builder.Configuration.GetSection("CorsOrigins").Get<string[]>()!)
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .WithExposedHeaders("Content-Disposition");
