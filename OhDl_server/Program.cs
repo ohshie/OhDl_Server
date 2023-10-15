@@ -1,6 +1,5 @@
 using Elsa;
 using Elsa.Persistence.EntityFramework.Sqlite;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using NYoutubeDL;
 using OhDl_server.DataLayer;
 using OhDl_server.DataLayer.DbContext;
@@ -12,7 +11,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Warning()
+    .MinimumLevel.Information()
     .Enrich.FromLogContext()
     .WriteTo.Console()
     .CreateLogger();
@@ -52,14 +51,13 @@ builder.Services.AddCors(options =>
         });
 });
 
-// builder.Services.AddTransient<IClock>(s => SystemClock.Instance);
 builder.Services.AddElsa(elsa =>
         {
             elsa.AddQuartzTemporalActivities().AddWorkflow<FileCleaner>();
         });
 
-var urls = builder.Configuration.GetValue<string>("AppUrl");
-builder.WebHost.UseUrls(urls);
+
+// builder.WebHost.UseUrls(urls);
 
 var app = builder.Build();
 
@@ -87,6 +85,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+var urls = builder.Configuration
+    .GetSection("Kestrel")
+    .GetSection("EndPoints")
+    .GetSection("Https")
+    .GetValue<string>("Url");
 Log.Logger.Warning("App is now listening at {Url}", urls);
 app.Run();
 
