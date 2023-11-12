@@ -10,7 +10,7 @@ public class FileOperator
 
     public FileOperator(IFileRepository fileRepository, ILogger<FileOperator> logger)
     {
-        this._fileRepository = fileRepository;
+        _fileRepository = fileRepository;
         _logger = logger;
     }
 

@@ -15,4 +15,6 @@ public class VideoFormat
     public bool BigFile { get; set; } = false;
 
     public bool WebmOnly { get; set; } = false;
+
+    public int TimeToDl { get; set; }
 }

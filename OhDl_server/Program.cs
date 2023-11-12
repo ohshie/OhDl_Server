@@ -4,6 +4,8 @@ using NYoutubeDL;
 using OhDl_server.DataLayer;
 using OhDl_server.DataLayer.DbContext;
 using OhDl_server.DataLayer.Repository;
+using OhDl_server.Models;
+using OhDl_server.Services;
 using OhDl_server.YtDlp;
 using OhDl_server.YtDlp.ElsaCleaner;
 using Serilog;
@@ -23,9 +25,13 @@ builder.Services.AddTransient<YoutubeDLP>();
 builder.Services.AddTransient<YtDlOperator>();
 builder.Services.AddTransient<FormatSorter>();
 builder.Services.AddTransient<StreamProvider>();
+builder.Services.AddTransient<DirectoryManager>();
+builder.Services.AddTransient<StatService>();
 
 builder.Services.AddTransient<IFileRepository, FileRepository>();
+builder.Services.AddTransient<IRepository<DownloadTimeStat>, DownloadTimeRepository>();
 builder.Services.AddTransient<FileOperator>();
+builder.Services.AddTransient<DownloadTimeOperator>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddSerilog();

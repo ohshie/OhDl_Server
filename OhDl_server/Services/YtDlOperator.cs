@@ -1,9 +1,12 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Web;
 using NYoutubeDL;
 using NYoutubeDL.Helpers;
 using NYoutubeDL.Models;
+using OhDl_server.DataLayer;
 using OhDl_server.Models;
+using OhDl_server.Services;
 
 namespace OhDl_server.YtDlp;
 
@@ -12,14 +15,19 @@ public class YtDlOperator
     private readonly ILogger<YtDlOperator> _logger;
     private readonly YoutubeDLP _youtubeDl;
     private readonly FormatSorter _sorter;
+    private readonly DirectoryManager _directoryManager;
+    private readonly StatService _statService;
+    private readonly Stopwatch _stopwatch = new();
     
     public YtDlOperator(ILogger<YtDlOperator> logger, 
         YoutubeDLP youtubeDl,
-        FormatSorter sorter)
+        FormatSorter sorter, DirectoryManager directoryManager, StatService statService)
     {
         _logger = logger;
         _youtubeDl = youtubeDl;
         _sorter = sorter;
+        _directoryManager = directoryManager;
+        _statService = statService;
 
         _youtubeDl.StandardOutputEvent += (sender, output) => logger.LogInformation("yt-dlp: {Output}",output);
         _youtubeDl.StandardErrorEvent += (sender, errorOutput) => logger.LogInformation("yt-dlp error {YtDlError}", errorOutput);
@@ -59,8 +67,10 @@ public class YtDlOperator
     public async Task<(string, string)> ServeAudioOnly(string videoUrl, Guid uuId)
     {
         _logger.Log(LogLevel.Information,"starting audio only process for {VideoUrl} by {UuId}", videoUrl, uuId);
-
-       var directory = DirectoryCreator("mp3", uuId);
+        
+        _stopwatch.Start();
+        
+       var directory = _directoryManager.DirectoryCreator("mp3", uuId);
         
         _youtubeDl.VideoUrl = HttpUtility.UrlDecode(videoUrl);
         
@@ -73,15 +83,19 @@ public class YtDlOperator
         var filename = filePath.Split("/").Last();
         
         _logger.Log(LogLevel.Information ,"Audio processed into {Filename} {FilePath}", filename,filePath);
+
+        _stopwatch.Stop();
         
         return (filePath, filename);
     }
 
     public async Task<(string, string)> ServeVideo(string videoUrl, string formatCode, Guid uuId)
     {
+        _stopwatch.Start();
+        
         _logger.LogInformation(eventId: 2, "starting video serving process for {VideoUrl} by {UuId}", videoUrl, uuId);
 
-        var directory = DirectoryCreator("mp4", uuId);
+        var directory = _directoryManager.DirectoryCreator("mp4", uuId);
         
         _youtubeDl.VideoUrl = videoUrl;
         
@@ -92,6 +106,10 @@ public class YtDlOperator
         var filename = filePath.Split("/").Last();
         
         _logger.LogInformation("Video processed into {Filename} {Filepath}", filename, filePath);
+        
+        _stopwatch.Stop();
+        
+        await _statService.TrackVideoStats(formatCode, _stopwatch.Elapsed, _youtubeDl.Info);
         
         return (filePath, filename);
     }
@@ -108,32 +126,6 @@ public class YtDlOperator
         await Task.WhenAll(getInfo, download);
 
         return Directory.GetFiles(directory).Last();
-    }
-
-    private DirectoryInfo DirectoryCreator(string type, Guid uuId)
-    {
-        int randomDirectory;
-        do
-        {
-            randomDirectory = new Random().Next(0, 10000);
-        } while (Directory.Exists(AssemblePath(type, uuId: uuId, randomDirectory)));
-        
-        var directory = Directory.CreateDirectory(AssemblePath(type, uuId: uuId, randomDirectory));
-
-        return directory;
-    }
-    
-    private string AssemblePath(string type, Guid uuId, int randomDirectory)
-    {
-        string[] filePaths = 
-        { 
-            AppDomain.CurrentDomain.BaseDirectory,
-            type,
-            uuId.ToString(),
-            randomDirectory.ToString()
-        };
-
-        return Path.Combine(filePaths);
     }
 }
 
